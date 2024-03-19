@@ -1,0 +1,380 @@
+﻿Program.Sub.ScreenSU.Start
+Gui.frmFileSelection..Create(BaseForm)
+Gui.frmFileSelection..Caption("Update PO Line Ship & Due Date From Excel")
+Gui.frmFileSelection..Size(5985,2190)
+Gui.frmFileSelection..MinX(0)
+Gui.frmFileSelection..MinY(0)
+Gui.frmFileSelection..Position(0,0)
+Gui.frmFileSelection..AlwaysOnTop(False)
+Gui.frmFileSelection..FontName("Tahoma")
+Gui.frmFileSelection..FontSize(8.25)
+Gui.frmFileSelection..ControlBox(True)
+Gui.frmFileSelection..MaxButton(False)
+Gui.frmFileSelection..MinButton(True)
+Gui.frmFileSelection..MousePointer(0)
+Gui.frmFileSelection..Moveable(True)
+Gui.frmFileSelection..Sizeable(False)
+Gui.frmFileSelection..ShowInTaskBar(True)
+Gui.frmFileSelection..TitleBar(True)
+Gui.frmFileSelection..Event(UnLoad,UnLoad)
+Gui.frmFileSelection.lbl1.Create(Label,"Choose the Excel File",True,1530,195,0,195,105,True,0,"Tahoma",8.25,,0,0)
+Gui.frmFileSelection.lbl1.BorderStyle(0)
+Gui.frmFileSelection.txtFilename.Create(TextBox,"",True,5070,300,0,195,375,True,0,"Tahoma",8.25,,1)
+Gui.frmFileSelection.txtFilename.Locked(True)
+Gui.frmFileSelection.cmdSelectFile.Create(Button)
+Gui.frmFileSelection.cmdSelectFile.Enabled(True)
+Gui.frmFileSelection.cmdSelectFile.Visible(True)
+Gui.frmFileSelection.cmdSelectFile.Zorder(0)
+Gui.frmFileSelection.cmdSelectFile.Size(405,330)
+Gui.frmFileSelection.cmdSelectFile.Position(5370,345)
+Gui.frmFileSelection.cmdSelectFile.Caption("^")
+Gui.frmFileSelection.cmdSelectFile.FontName("Tahoma")
+Gui.frmFileSelection.cmdSelectFile.FontSize(8.25)
+Gui.frmFileSelection.cmdSelectFile.Event(Click,cmdSelectFile_Click)
+Gui.frmFileSelection.cmdOK.Create(Button)
+Gui.frmFileSelection.cmdOK.Enabled(True)
+Gui.frmFileSelection.cmdOK.Visible(True)
+Gui.frmFileSelection.cmdOK.Zorder(0)
+Gui.frmFileSelection.cmdOK.Size(795,345)
+Gui.frmFileSelection.cmdOK.Position(195,735)
+Gui.frmFileSelection.cmdOK.Caption("OK")
+Gui.frmFileSelection.cmdOK.FontName("Tahoma")
+Gui.frmFileSelection.cmdOK.FontSize(8.25)
+Gui.frmFileSelection.cmdOK.Event(Click,cmdOK_Click)
+Gui.frmFileSelection.pbProcess.Create(ProgressBar)
+Gui.frmFileSelection.pbProcess.Visible(False)
+Gui.frmFileSelection.pbProcess.Size(4350,270)
+Gui.frmFileSelection.pbProcess.Position(1365,780)
+Gui.frmFileSelection.pbProcess.Max(20)
+Gui.frmFileSelection.lblProcess.Create(Label,"Step 1: Processing Record 0 of 0",False,4320,195,0,1380,1140,True,0,"Tahoma",7,,0,1)
+Gui.frmFileSelection.lblProcess.BorderStyle(0)
+Gui.frmFileSelection.lblStatus.Create(Label,"Step 1: Processing Record 0 of 0",False,4305,165,0,1395,1365,True,0,"Tahoma",7,,0,1)
+Gui.frmFileSelection.lblStatus.BorderStyle(0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.bConnect.Declare(Boolean,False)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+	f.Intrinsic.Control.Try
+		v.Local.sError.Declare
+		
+		'Show the selection screen
+		gui.frmFileSelection..Show
+	
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		f.Intrinsic.UI.Msgbox(V.Local.sError)	
+		f.Intrinsic.Control.CallSub(UnLoad)
+	f.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.UnLoad.Start
+	f.Intrinsic.Control.Try
+		v.Local.sError.Declare
+		
+		f.Intrinsic.Control.If(v.DataTable.dtImport.Exists)
+			f.Data.DataTable.Close("dtImport")
+		f.Intrinsic.Control.EndIf
+		
+		f.Intrinsic.Control.If(v.DataTable.dtUpdate.Exists)
+			f.Data.DataTable.Close("dtUpdate")
+		f.Intrinsic.Control.EndIf
+		
+		f.Intrinsic.Control.If(V.Global.bConnect)
+			f.ODBC.Connection!con.close
+		f.Intrinsic.Control.EndIf
+		
+		f.Intrinsic.Control.End
+		
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		f.Intrinsic.UI.Msgbox(V.Local.sError)	
+		f.Intrinsic.Control.End
+	f.Intrinsic.Control.EndTry
+Program.Sub.UnLoad.End
+
+Program.Sub.cmdSelectFile_Click.Start
+	f.Intrinsic.Control.Try
+		v.Local.sError.Declare
+		v.Local.sFile.Declare
+		v.Local.sDir.Declare
+	
+		F.Intrinsic.String.Build("{0}\Select File",V.Caller.FilesDir,V.Local.sDir)
+		F.Intrinsic.UI.ShowOpenFileDialog("","Supported Files|*.xls;*.xlsx","",V.Local.sFile)
+		F.Intrinsic.Control.If(V.Local.sFile,<>,"***CANCEL***")
+			Gui.frmFileSelection.txtFilename.Text(V.Local.sFile)
+		F.Intrinsic.Control.Else
+			Gui.frmFileSelection.txtFilename.Text("")
+		F.Intrinsic.Control.EndIf
+
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		f.Intrinsic.UI.Msgbox(V.Local.sError)	
+		f.Intrinsic.Control.CallSub(UnLoad)
+	f.Intrinsic.Control.EndTry
+Program.Sub.cmdSelectFile_Click.End
+
+Program.Sub.cmdOK_Click.Start
+	f.Intrinsic.Control.Try
+		v.Local.sError.Declare
+		V.Local.sFileExt.Declare
+		V.Local.bExcelExists.Declare
+		
+		F.Intrinsic.Control.If(V.Screen.frmFileSelection!txtFilename.Text,=,"")
+			F.Intrinsic.UI.Msgbox("Please select a file")
+			F.Intrinsic.Control.ExitSub
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.File.GetExtensionComponent(V.Screen.frmFileSelection!txtFilename.Text,V.Local.sFileExt)
+		F.Intrinsic.Control.If(V.Local.sFileExt.UCase,=,"XLS","or",V.Local.sFileExt.UCase,=,"XLSX")
+			F.Automation.MSExcel.CheckPresence(V.Local.bExcelExists)
+			F.Intrinsic.Control.If(V.Local.bExcelExists)
+				F.Intrinsic.Control.CallSub(LoadExcelFiles)
+				f.Intrinsic.Control.If(v.Args.bSuccess.Not)
+					gui.frmFileSelection.lblStatus.Visible(True)
+					gui.frmFileSelection.lblStatus.Caption("Failed")
+					gui.frmFileSelection.lblStatus.ForeColor(v.Color.LtRed)
+				f.Intrinsic.Control.Else
+					gui.frmFileSelection.lblStatus.Visible(True)
+					gui.frmFileSelection.lblStatus.Caption("Successful")
+					gui.frmFileSelection.lblStatus.ForeColor(v.Color.LtBlue)					
+				f.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Else
+				F.Intrinsic.UI.Msgbox("You need MS Excel in order to use this program.","GAB_XXXX_UpdatePOLineShipDate_From_Excel")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		f.Intrinsic.UI.Msgbox(V.Local.sError)	
+		f.Intrinsic.Control.CallSub(UnLoad)
+	f.Intrinsic.Control.EndTry
+Program.Sub.cmdOK_Click.End
+
+Program.Sub.LoadExcelFiles.Start
+	f.Intrinsic.Control.Try
+		V.Local.sError.Declare
+		V.Local.sFile.Declare
+		V.Local.sExcel.Declare
+		V.Local.sExcelFile.Declare
+		V.Local.sMessage.Declare
+		V.Local.bIsLocked.Declare
+		v.Local.sExcelHeader.Declare
+		v.Local.sExcelColTitle.Declare
+		v.Local.sColDataTypes.Declare
+		v.Local.iCnt.Declare
+		v.Local.sDataType.Declare
+		v.Local.bPOColExists.Declare
+		v.Local.bPOLnColExists.Declare
+		v.Local.bPOShipDateExists.Declare
+		v.Local.bPODueDateExists.Declare
+		v.Local.sCols.Declare 
+		v.Local.sString.Declare
+		v.Local.sShipDateYYYYMMDD.Declare
+		v.Local.sDueDateYYYYMMDD.Declare
+		v.Local.sDueDateMMDDYY.Declare
+		v.Local.iRecNo.Declare
+		v.Local.sPO.Declare
+		v.Local.sPOLine.Declare
+		v.Local.sUSER_5.Declare
+		
+		gui.frmFileSelection.pbProcess.Max(20)
+		gui.frmFileSelection.pbProcess.Visible(True)
+		gui.frmFileSelection.lblProcess.Visible(True)
+		gui.frmFileSelection.lblStatus.Visible(False)
+		
+		gui.frmFileSelection.lblProcess.Caption("Checking Excel file...")
+		gui.frmFileSelection.pbProcess.Value(1)
+		
+		F.Intrinsic.File.IsFileLocked(V.Screen.frmFileSelection!txtFilename.Text,V.Local.bIsLocked)
+		F.Intrinsic.Control.If(V.Local.bIsLocked)
+			F.Intrinsic.UI.Msgbox("File is locked by another process. Cannot continue the process.")
+			'Add Return Value to the calling subroutine
+			F.Intrinsic.Variable.AddRV("bSuccess",False)
+			F.Intrinsic.Control.ExitSub
+		F.Intrinsic.Control.EndIf
+		
+		gui.frmFileSelection.lblProcess.Caption("Extracting data from Excel file...")
+		gui.frmFileSelection.pbProcess.Value(3)
+		
+		V.Local.sExcelFile.Set(V.Screen.frmFileSelection!txtFilename.Text)
+		F.Automation.MSExcel.ReadSpreadsheet(V.Local.sExcelFile,v.Local.sExcel)
+		F.Intrinsic.String.Replace(v.Local.sExcel,"&^&","$!$",v.Local.sExcel)
+		
+		'Getting the Column Header Title & Set all column data types to String
+		F.Intrinsic.String.Split(v.Local.sExcel,"$!$",v.Local.sExcelHeader)
+		F.Intrinsic.String.Split(v.Local.sExcelHeader(0),"*!*",v.Local.sExcelColTitle)
+		v.Local.sColDataTypes.Set("")
+		F.Intrinsic.Control.For(v.Local.iCnt,0,v.Local.sExcelColTitle.UBound,1)
+			v.Local.sDataType.Set("String")
+			F.Intrinsic.Control.If(v.Local.sExcelColTitle(v.Local.iCnt),=,"PO")
+				v.Local.bPOColExists.Set(True)
+			F.Intrinsic.Control.ElseIf(v.Local.sExcelColTitle(v.Local.iCnt),=,"Ln")
+				v.Local.bPOLnColExists.Set(True)
+			F.Intrinsic.Control.ElseIf(v.Local.sExcelColTitle(v.Local.iCnt),=,"Ship Date")
+				v.Local.bPOShipDateExists.Set(True)
+			F.Intrinsic.Control.ElseIf(v.Local.sExcelColTitle(v.Local.iCnt),=,"Due Date")
+				v.Local.bPODueDateExists.Set(True)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.If(v.Local.iCnt,=,v.Local.sExcelColTitle.LBound)
+				v.Local.sColDataTypes.Set(v.Local.sDataType)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Build("{0}*!*{1}",v.Local.sColDataTypes,v.Local.sDataType,v.Local.sColDataTypes)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(v.Local.iCnt)
+		
+		'Stop processing if there is no PO or Ln or Ship Date column in the excel file
+		F.Intrinsic.Control.If(v.Local.bPOColExists,=,False,"OR",v.Local.bPOLnColExists,=,False,v.Local.bPOShipDateExists,=,False,v.Local.bPODueDateExists,=,False)
+			F.Intrinsic.UI.Msgbox("There is no 'PO' or 'Ln' or 'Ship Date' or 'Due Date' column in the excel file. Please check the file.")
+			'Add Return Value to the calling subroutine
+			F.Intrinsic.Variable.AddRV("bSuccess",False)
+			F.Intrinsic.Control.ExitSub
+		F.Intrinsic.Control.EndIf
+		
+		gui.frmFileSelection.lblProcess.Caption("Converting data to DataTable...")
+		gui.frmFileSelection.pbProcess.Value(6)
+		
+		'Create DataTable from the extracted Excel File
+		'v.Local.sExcelHeader(0) is the Column Header row
+		F.Data.DataTable.CreateFromString("dtImport",V.Local.sExcel,v.Local.sExcelHeader(0),v.Local.sColDataTypes,"*!*","$!$",true)
+		'Remove the first row because it is the Column Header row from the Excel file
+		F.Data.DataTable.DeleteRow("dtImport",0)
+		
+		gui.frmFileSelection.lblProcess.Caption("Calculating Due Date...")
+		gui.frmFileSelection.pbProcess.Value(9)
+		
+		'Add the necessary columns
+		F.Data.DataTable.AddColumn("dtImport","FLAG_REC_TYPE","String","L")
+		F.Data.DataTable.AddColumn("dtImport","PURCHASE_ORDER","String","")
+		F.Data.DataTable.CopyColumn("dtImport","PO","PURCHASE_ORDER")
+		F.Data.DataTable.AddColumn("dtImport","RECORD_NO","String","")
+		F.Data.DataTable.CopyColumn("dtImport","Ln","RECORD_NO")
+		F.Data.DataTable.AddExpressionColumn("dtImport","SHIP_DATE_DATETYPE","Date","CONVERT(IIF([Ship Date]='','1900-01-01',[Ship Date]),'System.DateTime')")
+		F.Data.DataTable.AddExpressionColumn("dtImport","DUE_DATE_DATETYPE","Date","CONVERT(IIF([Due Date]='','1900-01-01',[Due Date]),'System.DateTime')")
+		F.Data.DataTable.AddColumn("dtImport","USER_5","String","")
+		F.Data.DataTable.CopyColumn("dtImport","User Field 5 (30 Characters)","USER_5")
+		
+'		F.Data.DataTable.AddColumn("dtImport","DUE_DATE_DATETYPE","Date")
+'		F.Data.DataTable.AddColumn("dtImport","DaysToAdd","Long",40)
+'		'Calculate Due Date = Ship Date + 40 days
+'		F.Data.DataTable.DateAdd("dtImport","SHIP_DATE_DATETYPE","d","DaysToAdd","DUE_DATE_DATETYPE")
+		
+		gui.frmFileSelection.lblProcess.Caption("Creating DataTable to String...")
+		gui.frmFileSelection.pbProcess.Value(12)
+		
+		'Create DataView from DataTable
+		F.Data.DataView.Create("dtImport","dvImport")
+		'ToString
+		v.Local.sCols.Set("FLAG_REC_TYPE*!*PURCHASE_ORDER*!*RECORD_NO*!*SHIP_DATE_DATETYPE*!*DUE_DATE_DATETYPE*!*USER_5")
+		v.Local.sColDataTypes.Set("String*!*String*!*String*!*Date*!*Date*!*String")
+		F.Data.DataView.ToString("dtImport","dvImport",v.Local.sCols,"*!*","#$#",v.Local.sString)
+		'Close the DataView
+		F.Data.DataView.Close("dtImport","dvImport")
+		'Close the DataTable
+		F.Data.DataTable.Close("dtImport")
+		
+		gui.frmFileSelection.lblProcess.Caption("Creating DataTable for Update...")
+		gui.frmFileSelection.pbProcess.Value(12)
+		
+		'Create DataTable from String
+		F.Data.DataTable.CreateFromString("dtUpdate",v.Local.sString,v.Local.sCols,v.Local.sColDataTypes,"*!*","#$#")
+		'Add necessary columns
+		F.Data.DataTable.AddColumn("dtUpdate","DATE_DUE_LINE","String","")
+		F.Data.DataTable.AddColumn("dtUpdate","DUE_DATE_L","String","")
+		F.Data.DataTable.AddColumn("dtUpdate","SHIP_DATE_L","String","")
+		
+		gui.frmFileSelection.lblProcess.Caption("Formatting Data...")
+		gui.frmFileSelection.pbProcess.Value(15)
+		
+		'Looping the DataTable to generate the Date in formatted string
+		F.Intrinsic.Control.For(v.Local.iCnt,0,V.DataTable.dtUpdate.RowCount--,1)
+			'Format the Ship Date to String YYYYMMD
+			f.Intrinsic.String.DateString(v.DataTable.dtUpdate(v.Local.iCnt).SHIP_DATE_DATETYPE!FieldVal,v.Local.sShipDateYYYYMMDD)
+			'Format the Due Date to String YYYYMMD
+			f.Intrinsic.String.DateString(v.DataTable.dtUpdate(v.Local.iCnt).DUE_DATE_DATETYPE!FieldVal,v.Local.sDueDateYYYYMMDD)
+			
+			'Validate PO No, Line No, and Ship Date
+			f.Intrinsic.Control.If(v.DataTable.dtUpdate(v.Local.iCnt).PURCHASE_ORDER!FieldValTrim,=,"","OR",v.DataTable.dtUpdate(v.Local.iCnt).PURCHASE_ORDER!FieldValTrim,=,"0",v.DataTable.dtUpdate(v.Local.iCnt).PURCHASE_ORDER!FieldValTrim,=,"0000000")
+				f.Intrinsic.Math.Add(v.Local.iCnt,1,v.Local.iRecNo)
+				f.Intrinsic.String.Build("Record {0} has a blank or invalid PO No. Please check the file.",v.Local.iRecNo.String,v.Local.sMessage)
+				f.Intrinsic.UI.Msgbox(v.Local.sMessage)
+				'Add Return Value to the calling subroutine
+				F.Intrinsic.Variable.AddRV("bSuccess",False)
+				f.Intrinsic.Control.ExitSub
+			f.Intrinsic.Control.ElseIf(v.DataTable.dtUpdate(v.Local.iCnt).RECORD_NO!FieldValTrim,=,"","OR",v.DataTable.dtUpdate(v.Local.iCnt).RECORD_NO!FieldValTrim,=,"0",v.DataTable.dtUpdate(v.Local.iCnt).RECORD_NO!FieldValTrim,=,"000")
+				f.Intrinsic.Math.Add(v.Local.iCnt,1,v.Local.iRecNo)
+				f.Intrinsic.String.Build("Record {0} has a blank or invalid PO Line No. Please check the file.",v.Local.iRecNo.String,v.Local.sMessage)
+				f.Intrinsic.UI.Msgbox(v.Local.sMessage)
+				'Add Return Value to the calling subroutine
+				F.Intrinsic.Variable.AddRV("bSuccess",False)
+				f.Intrinsic.Control.ExitSub
+			f.Intrinsic.Control.ElseIf(v.Local.sShipDateYYYYMMDD,=,"19000101")
+				f.Intrinsic.String.Build("PO: {0}-{1} has a blank or 1900-01-01 Ship Date. Please check the file.",v.DataTable.dtUpdate(v.Local.iCnt).PURCHASE_ORDER!FieldVal,v.DataTable.dtUpdate(v.Local.iCnt).Ln!FieldVal,v.Local.sMessage)
+				f.Intrinsic.UI.Msgbox(v.Local.sMessage)
+				'Add Return Value to the calling subroutine
+				F.Intrinsic.Variable.AddRV("bSuccess",False)
+				f.Intrinsic.Control.ExitSub
+			f.Intrinsic.Control.ElseIf(v.Local.sDueDateYYYYMMDD,=,"19000101")
+				f.Intrinsic.String.Build("PO: {0}-{1} has a blank or 1900-01-01 Due Date. Please check the file.",v.DataTable.dtUpdate(v.Local.iCnt).PURCHASE_ORDER!FieldVal,v.DataTable.dtUpdate(v.Local.iCnt).Ln!FieldVal,v.Local.sMessage)
+				f.Intrinsic.UI.Msgbox(v.Local.sMessage)
+				'Add Return Value to the calling subroutine
+				F.Intrinsic.Variable.AddRV("bSuccess",False)
+				f.Intrinsic.Control.ExitSub
+			f.Intrinsic.Control.EndIf
+			
+			'Format PO No
+			F.Intrinsic.String.LPad(v.DataTable.dtUpdate(v.Local.iCnt).PURCHASE_ORDER!FieldValTrim,"0",7,V.Local.sPO)
+			
+			'Format PO Line No
+			F.Intrinsic.String.LPad(v.DataTable.dtUpdate(v.Local.iCnt).RECORD_NO!FieldValTrim,"0",3,V.Local.sPOLine)
+			F.Intrinsic.String.Concat(v.Local.sPOLine,"0",v.Local.sPOLine)
+
+			'Format Due Dates to String YYYYMMD & MMDDYY
+			f.Intrinsic.String.Format(v.DataTable.dtUpdate(v.Local.iCnt).DUE_DATE_DATETYPE!FieldVal,"YYYYMMDD",v.Local.sDueDateYYYYMMDD)
+			f.Intrinsic.String.Format(v.DataTable.dtUpdate(v.Local.iCnt).DUE_DATE_DATETYPE!FieldVal,"MMDDYY",v.Local.sDueDateMMDDYY)
+			
+			'USER_%
+			v.Local.sUSER_5.Set(v.DataTable.dtUpdate(v.Local.iCnt).USER_5!FieldValTrim)
+			
+			'Update to DataTable
+			f.Data.DataTable.SetValue("dtUpdate",v.Local.iCnt,"PURCHASE_ORDER",v.Local.sPO,"RECORD_NO",v.Local.sPOLine,"SHIP_DATE_L",v.Local.sShipDateYYYYMMDD,"DUE_DATE_L",v.Local.sDueDateYYYYMMDD,"DATE_DUE_LINE",v.Local.sDueDateMMDDYY,"USER_5",v.Local.sUSER_5)
+		F.Intrinsic.Control.Next(v.Local.iCnt)
+		
+		'Remove unneeded columns
+		F.Data.DataTable.RemoveColumn("dtUpdate","SHIP_DATE_DATETYPE")
+		F.Data.DataTable.RemoveColumn("dtUpdate","DUE_DATE_DATETYPE")
+		
+		gui.frmFileSelection.lblProcess.Caption("Updating to database...")
+		gui.frmFileSelection.pbProcess.Value(18)
+		
+		'Open connection to database
+		F.ODBC.Connection!con.OpenCompanyConnection(300)
+		V.Global.bConnect.Set(True)
+		
+		'Save to Table in database
+		F.Data.DataTable.SaveToDB("dtUpdate","con","PO_LINES","FLAG_REC_TYPE*!*PURCHASE_ORDER*!*RECORD_NO",256)
+		
+		f.Intrinsic.String.Build("Updated {0} records",v.DataTable.dtUpdate.RowCount,v.Local.sMessage)
+		gui.frmFileSelection.lblProcess.Caption(v.Local.sMessage)
+		gui.frmFileSelection.pbProcess.Value(20)
+		
+		'Close DataTable
+		F.Data.DataTable.Close("dtUpdate")
+		
+		'Add Return Value to the calling subroutine
+		F.Intrinsic.Variable.AddRV("bSuccess",True)
+		
+	
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		f.Intrinsic.UI.Msgbox(V.Local.sError)	
+		f.Intrinsic.Control.CallSub(UnLoad)
+	f.Intrinsic.Control.EndTry
+Program.Sub.LoadExcelFiles.End
+
+Program.Sub.Comments.Start
+${$5$}$20.1.8245.18323$}$1
+${$6$}$tdjohan$}$20220809151200429$}$8rAQhOSvlohpQhMDm1j544LwmwXnRbkhGYxm77CYSIlRv623eRvDmNnT3D1xxT/Sjfy3Gv7ir/o=
+Program.Sub.Comments.End
